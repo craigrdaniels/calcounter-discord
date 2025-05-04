@@ -25,6 +25,18 @@ json = [
             }
         ]
     },
+    {
+        "name": "log",
+        "description": "Log an estimate of the calories and kilojoules in this image",
+        "options": [
+            {
+                "name": "image",
+                "description": "Provide the image to calculate the calories and kilojoules",
+                "type": 11,
+                "required": True
+            }
+        ]
+    },
 ]
 
 response = requests.put(url, headers={

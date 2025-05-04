@@ -6,6 +6,7 @@ from io import BytesIO
 from PIL import Image
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
+import handlers.mongodb as mongodb
 
 from dotenv import load_dotenv
 
@@ -14,7 +15,6 @@ load_dotenv()
 PUBLIC_KEY = os.getenv("PUBLIC_KEY")
 
 from smolagents import DuckDuckGoSearchTool, LiteLLMModel, ToolCallingAgent, CodeAgent
-
 
 query = """
 Describe the food in the image and calculate an estimate of the calories and kilojoules in the given image file. Answer in whole numbers only.
@@ -84,7 +84,7 @@ def command_handler(body):
         image_url = body['data']['resolved']['attachments'][image_id]['url']
         print(image_url)
 
-        if command != 'cals':
+        if command != 'cals' and command != 'log':
             return {
             'statusCode': 400,
             'body': json.dumps('Invalid command')
@@ -111,6 +111,14 @@ def command_handler(body):
         result = f"{loaded_result['description']}\nCalories: {loaded_result['calories']}, Kilojoules: {loaded_result['kilojoules']}"
         print(f"Result: {result}")
 
+        if command == 'log':
+            loaded_result['username'] = body['member']['user']['username']
+            mongodb.update_data(loaded_result)
+            total_records = mongodb.fetch_data(loaded_result['username'])
+            total_cals = sum([record['calories'] for record in total_records])
+            total_kjs = sum([record['kilojoules'] for record in total_records])
+            result += f"\nDaily total calories: {total_cals}, Daily total kilojoules: {total_kjs}"
+                
         update(result, body['token'], os.getenv('APP_ID'))
 
         return {
